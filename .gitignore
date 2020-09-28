@@ -1,0 +1,4 @@
+*.txt
+*.vtu
+*.pdf
+out_data/nforce/*.dat

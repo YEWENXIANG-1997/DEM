@@ -107,8 +107,8 @@ for c in con_d:
 sim = LsmMpi (numWorkerProcesses = 1, mpiDimList = [1,1,1])
 sim.initVerletModel (
    particleType = "RotSphere",
-   gridSpacing = 2.5e-2,
-   verletDist = 1.00e-008
+   gridSpacing = 2*r_p+0.2*r_p,
+   verletDist = 0.2*r_p
 )
 
 # specify the number of timesteps and the timestep increment:
@@ -116,17 +116,18 @@ sim.setNumTimeSteps (2000)
 sim.setTimeStepSize (1.0e-4)
 
 # the length of the domain 
-sim.setSpatialDomain(BoundingBox(Vec3(-4e-3,-4e-3,-1.5e-3),Vec3(4e-3,4e-3,1.5e-3)))
+ep = 1e-5
+sim.setSpatialDomain(BoundingBox(Vec3(-4e-3-ep,-4e-3-ep,-4.0e-3-ep),Vec3(4e-3+ep,4e-3+ep,4.0e-3+ep)))
 
 # add the first sand lay to the domain:
 # set the tag as #1
 count = int(L/r_s)
-geoHCP = HexagBlock (
-   dimCount = [count,count,3],
-   radius = r_s
-)
-geoHCP.translate ( translation = Vec3(0,0,-1.5e-3) )
-sim.createParticles(geoHCP)
+# geoHCP = HexagBlock (
+#    dimCount = [count,count,3],
+#    radius = r_s
+# )
+# geoHCP.translate ( translation = Vec3(0,0,-4.0e-3) )
+# sim.createParticles(geoHCP)
 
 geoHydrate = RandomBoxPacker(
    minRadius = r_p,
@@ -134,8 +135,8 @@ geoHydrate = RandomBoxPacker(
    cubicPackRadius = 2*(r_p+3e-5)+r_p,
    maxInsertFails = 2000,
    bBox = BoundingBox(
-      Vec3(-4e-3,-4e-3,-1.5e-3),
-      Vec3(4e-3,4e-3,1.5e-3)
+      Vec3(-4e-3,-4e-3,-4e-3),
+      Vec3(4e-3,4e-3,4e-3)
    ),
    circDimList = [False, False, False],
    tolerance = 0.001
@@ -146,36 +147,41 @@ geoRandomBlock_particles = geoHydrate.getSimpleSphereCollection()
 sim.createParticles(geoRandomBlock_particles)
 
 
-geoHCP2 = HexagBlock (
-   dimCount = [count,count,3],
-   radius = r_s
-)
+# geoHCP2 = HexagBlock (
+#    dimCount = [count,count,3],
+#    radius = r_s
+# )
 
-geoHCP2.translate ( translation = Vec3(0,0,1.5e-3))
-sim.createParticles(geoHCP2)
+# geoHCP2.translate ( translation = Vec3(0,0,4e-3))
+# sim.createParticles(geoHCP2)
 
 plist = []
-for p1 in geoHCP:
-   p1.setTag(1)
-   plist.append(p1.getId())
-maxId = max(plist)
+# for p1 in geoHCP:
+#    p1.setTag(1)
+#    plist.append(p1.getId())
+# maxId = max(plist)
 
-for p2 in geoRandomBlock_particles:
-   p2.setTag(2)
-   oldId_2 = p2.getId() + 1
-   p2.setId(oldId_2 + maxId)
+for i,p2 in enumerate(geoRandomBlock_particles):
+   p2.setTag(i)
    plist.append(p2.getId())
 maxId = max(plist)
 
-for p3 in geoHCP2:
-   p3.setTag(3)
-   oldId_3 = p3.getId() + 1
-   p2.setId(oldId_3 + maxId)
-   plist.append(p3.getId())
+# for p2 in geoRandomBlock_particles:
+#    p2.setTag(2)
+#    oldId_2 = p2.getId() + 1
+#    p2.setId(oldId_2 + maxId)
+#    plist.append(p2.getId())
+# maxId = max(plist)
 
-sim.setParticleDensity(tag=1, mask=-1, Density=density)
+# for p3 in geoHCP2:
+#    p3.setTag(3)
+#    oldId_3 = p3.getId() + 1
+#    p2.setId(oldId_3 + maxId)
+#    plist.append(p3.getId())
+
+# sim.setParticleDensity(tag=1, mask=-1, Density=density)
 sim.setParticleDensity(tag=2, mask=-1, Density=density)
-sim.setParticleDensity(tag=3, mask=-1, Density=density)
+# sim.setParticleDensity(tag=3, mask=-1, Density=density)
 
 
 sim.createInteractionGroup(
@@ -190,66 +196,67 @@ sim.createInteractionGroup(
         meanR_scaling=True
     )
 )
-#add bond to first layer sand
-sim.createConnections(
-    ConnectionFinder(
-        maxDist=r_p,
-        bondTag=0,
-	    pList=geoHCP
-    )
-)
-sim.createInteractionGroup(
-    BrittleBeamPrms(
-        name="ppbond_sand_1",
-        youngsModulus=1.1e10,
-        poissonsRatio=0.31,
-        cohesion=6.73e6,
-        tanAngle=bondTanAngle,
-        tag=0,
-        meanR_scaling=True,
-        truncated=2*r_s*2.86e8,
-	    beta1=1.0,
-        beta2=1.0
-    )
-)
+
+# #add bond to first layer sand
+# sim.createConnections(
+#     ConnectionFinder(
+#         maxDist=r_p,
+#         bondTag=0,
+# 	    pList=geoHCP
+#     )
+# )
+# sim.createInteractionGroup(
+#     BrittleBeamPrms(
+#         name="ppbond_sand_1",
+#         youngsModulus=1.1e10,
+#         poissonsRatio=0.31,
+#         cohesion=6.73e6,
+#         tanAngle=bondTanAngle,
+#         tag=0,
+#         meanR_scaling=True,
+#         truncated=2*r_s*2.86e8,
+# 	    beta1=1.0,
+#         beta2=1.0
+#     )
+# )
 
 sim.createExclusion(
     interactionName1="ppbond_sand_1",
     interactionName2="friction"
 )
 
-#add bond to second layer sand
-sim.createConnections(
-    ConnectionFinder(
-        maxDist=r_p,
-        bondTag=1,
-	    pList=geoHCP2
-    )
-)
-sim.createInteractionGroup(
-    BrittleBeamPrms(
-        name="ppbond_sand_2",
-        youngsModulus=1.1e10,
-        poissonsRatio=0.31,
-        cohesion=6.73e6,
-        tanAngle=bondTanAngle,
-        tag=1,
-        meanR_scaling=True,
-        truncated=2*r_s*2.86e8,
-	    beta1=1.0,
-        beta2=1.0
-    )
-)
+# #add bond to second layer sand
+# sim.createConnections(
+#     ConnectionFinder(
+#         maxDist=r_p,
+#         bondTag=1,
+# 	    pList=geoHCP2
+#     )
+# )
+# sim.createInteractionGroup(
+#     BrittleBeamPrms(
+#         name="ppbond_sand_2",
+#         youngsModulus=1.1e10,
+#         poissonsRatio=0.31,
+#         cohesion=6.73e6,
+#         tanAngle=bondTanAngle,
+#         tag=1,
+#         meanR_scaling=True,
+#         truncated=2*r_s*2.86e8,
+# 	    beta1=1.0,
+#         beta2=1.0
+#     )
+# )
 
-sim.createExclusion(
-    interactionName1="ppbond_sand_2",
-    interactionName2="friction"
-)
+# sim.createExclusion(
+#     interactionName1="ppbond_sand_2",
+#     interactionName2="friction"
+# )
 
 #add bond to hydrate
 sim.createConnections(
     ConnectionFinder(
-        maxDist=r_p,
+        maxDist=r_p*50,
         bondTag=2,
 	    pList=geoRandomBlock_particles
     )
@@ -360,7 +367,7 @@ sim.createInteractionGroup(
         name="ptop",
         wallName="top",
         normalK=1e+8,
-        particleTag=1
+        particleTag=2
     )
 )
 sim.createInteractionGroup(
@@ -368,7 +375,7 @@ sim.createInteractionGroup(
         name="pbottom",
         wallName="bottom",
         normalK=1e+8,
-        particleTag=3
+        particleTag=2
     )
 )
 
@@ -376,7 +383,7 @@ sim.createInteractionGroup(
 wall_loader1 = WallLoaderRunnable(
    LsmMpi = sim,
    wallName = "top_wall",
-   vPlate = Vec3 (0.0,0.0,-1e-5),
+   vPlate = Vec3 (0.0,0.0,-4e-3),
    startTime = 0,
    rampTime = 50000
 )
@@ -386,7 +393,7 @@ sim.addPreTimeStepRunnable (wall_loader1)
 wall_loader2 = WallLoaderRunnable(
    LsmMpi = sim,
    wallName = "bottom_wall",
-   vPlate = Vec3 (0.0,0.0,1e-5),
+   vPlate = Vec3 (0.0,0.0,4e-3),
    startTime = 0,
    rampTime = 50000
 )
@@ -495,8 +502,10 @@ sim.createCheckPointer(
     CheckPointPrms(
         fileNamePrefix="snapshot",
         beginTimeStep=0,
-        endTimeStep=endTs,
-        timeStepIncr=incTs_snap
+        endTimeStep=10,
+        # endTimeStep=endTs,
+        timeStepIncr=10
+        #timeStepIncr=incTs_snap
     )
 )
 

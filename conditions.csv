@@ -3,7 +3,7 @@ incT[s],0.0001
 incT_snap[s],0.001
 speed[m/s],0.00001
 L[m],0.002
-r_p[m],0.00001
+r_p[m],0.00005
 r_s[m],0.0001
 initialDistance[m],0.001
 endstrain,0.05
