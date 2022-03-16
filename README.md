@@ -1,9 +1,13 @@
+# Contents
+
+- [Packing](#Packing)
+- [Tensile](#Tensile)
+
 # Packing
 ## Table of Contents
 
 - [About](#about)
 - [Usage](#usage)
-- [Log](#log)
 
 ## About <a name = "about"></a>
 
@@ -11,23 +15,20 @@ This program is for packing hydrate-particles in cylindrical shape.
 
 ## Usage <a name = "usage"></a>
 The basical usage is as follows:
-1. [make a cylindrical mesh ](#1)
-2. [set the condition in condition.csv](#2)
-3. [run packing.py](#3)
-4. [output a geo file](#4)
+1. [Make a cylindrical mesh ](#1)
+2. [Set the condition in condition.csv](#2)
+3. [Run packing.py](#3)
+4. [Output a geo file](#4)
 
-### make a cylindrical mesh <a name = "1"></a>
+### Make a cylindrical mesh <a name = "1"></a>
 Since this program packs particles into a cylindrical mesh, a cylindrical mesh must be created in advance.
-
-In this repository, a cylindrical mesh with radius=2.5mm and height=2.7mm simulating Santamarina's paper is already created and located in ./mesh. But, just in case, how to creating mesh is explained below.
 
 
 In creating a mesh, [gmsh](http://gmsh.info) is used.
-Please install gmsh to your machine(not the server machine.  It requires a display.)
+Please install gmsh to the PC.
 
-
-After you installed gmsh, please open ./mesh/cylinder.geo by a texteditor.
-Radius and height of a cylinder are defined in the top of .geo file like below. Please change them as you want.
+After installe gmsh, open ./mesh/cylinder.geo by a texteditor.
+Radius and height of a cylinder are defined in the top of .geo file like below. 
 ```cylinder.geo
 //radius [m]
 r = 0.0025;
@@ -36,8 +37,8 @@ r = 0.0025;
 h = 0.0027;
 ```
 
-Then, please open cylinder.geo by gmsh.
-After opening geo file, select mesh->2D, then cylinder is splitted as a mesh.
+Then, open cylinder.geo by gmsh.
+After opening geo file, select mesh->2D, then cylinder is splitted as a mesh. And you can increase the number of nodes by clicking the "Refine by splitting".
 
 <img width="747" alt="mesh" src="https://user-images.githubusercontent.com/50572759/94533443-15351c80-027a-11eb-9055-ebd4e635fc58.png">
 
@@ -55,7 +56,7 @@ Then, cylinder.lsm, which is a mesh file for esysparticle, will be output.
 
 
 
-### set the condition in condition.csv <a name = "2"></a>
+### Set the condition in condition.csv <a name = "2"></a>
 
 
 |variable|explanation|
@@ -77,14 +78,14 @@ Then, cylinder.lsm, which is a mesh file for esysparticle, will be output.
 |threshold|file name of threshold file|
 
 
-#### set the threshold for the overlap in threshold.csv <a name = "2"></a>
+#### Set the threshold for the overlap in threshold.csv <a name = "2"></a>
 |index|threshold[m]|
 |---|---|
 |...|...|
 
 "index" is used for the filename of snapshot files for each threshold.
 
-### run packing.py <a name = "3"></a>
+### Run packing.py <a name = "3"></a>
 To run the packing program, please run the below command.
 ```
 mpirun -np #proc esysparticle packing.py
@@ -93,45 +94,85 @@ mpirun -np #proc esysparticle packing.py
 In this program, the radius expansion technique is used to prevent particle overlap. First, the number of particles satisfying the target porosity is calculated and randomly placed in a cylinder. The calculation is started with each particle size multiplied by a certain magnification(initialfactor) to reduce it, and the size of the particles is returned to their original size over time. After the particles have settled, the calculation is finished.
 The standard output shows "scaling" when the particle is expanding, and "easing" when it is doing nothing and waiting for the particle to settle down.
 
-~~There are no clear criteria as to when to stop calculating after "easing" is indicated.
-In general, you can visualize the snapshot with paraview and if the particles are not moving, you can stop it.~~
-
-
 The function, getMinMaxDistance(), returns the min. and max. distance of all particles. The distance means (the distance between two particles from their center) - (sum of the radius of two particles).
-~~So, if min. distance is below the threshold, the "easing" will be stopped.~~
+So, if min. distance is below the threshold, the "easing" will be stopped.
 After the min. distance is below the threshold, snapshot_threshold_idx#_t=#_#.txt will be generated. Convert this into geo file and use it in your tensile program.
 
-### output a geo file <a name = "4"></a>
+### Output a geo file <a name = "4"></a>
 To use the particles packed by this program in the tensile program, you need to output a geo file by
 ```
 dump2geo -i snapshot_packing -o "outputname" -rot -t "target number" 1 1
 ```
 The usage of dump2geo is the same to dump2vtk.
 
-However, there is a bug in dump2geo that it lacks the information "Dimension 3D" in the header and outputs only "Dimension", so you need to add "3D" manually after outputting the geo file. (I will fix this bug in the near future.)
-<img width="1235" alt="geo" src="https://user-images.githubusercontent.com/50572759/94570577-f484bb00-02a9-11eb-80fc-a9599449dfbb.png">
-
-Note that the center of the cylinder output from this program goes through the z-axis.
-
-<img width="569" alt="particles" src="https://user-images.githubusercontent.com/50572759/94575968-c904cf00-02af-11eb-9591-e9f9c5707cb4.png">
+After created geo file, use it in tensile program.
 
 
-After you created geo file, please use it in your tensile program.
+# Tensile
 
-## Log <a name = "log"></a>
-2021.03.16
-- output snapshot for every threshold.
+## About <a name = "about"></a>
+
+Tensile test for methane hydrates using esysparticle.
+
+## Usage <a name = "usage"></a>
+
+This project consists of the followings:
+ - tensile.py : a main program for the tensile test
+ - tensileRunnable.py : a runnable class for moving particles
+ - conditions.csv : a input file
+ - plot.py: a program for plots.
+
+To run this program, execute the following command.
+```
+mpirun -np 2 esysparticle tensile.py
+```
+After a computation, results will be output in "out_data" directory.
+Its contents are :
+ - nbonds.dat, the number of bonds.
+ - wall_Force.dat, the force acting on the walls.
+ - wall_Position.dat, the position of the wall the walls.
+
+The bond will be broken when the tensile stress met the limitation, 
+but the compuation will continue until the strain reaches the value set in conditions.csv(endstrain).
+So, check if it should be stopped by plot the stress-strain curve.
+
+### conditions.csv
+The contens in conditions.csv are explained below.
+
+|variable|explanation|
+|---|---|
+|dT[s]|delta t[s]|
+|incT[s]|the interval for output of data[s]|
+|incT_snap[s]|the interval for output of snapshot|
+|speed[m/s]|the speed of the particle[m/s]|
+|H[m]|the height of the cylinder|
+|R[m]|the radius of the cylinder|
+|r_p[m]|the radius of particles|
+|endstrain|max of the strain.|
+|density[kg/m^3]|density of particles|
+|maxTensile[Pa]|max tensile stress that the bond will break|
+|Sh|the saturation of methane hydrates|
+|bondModulus|Young's modulus of methane hydrates|
+|bondPoissonRatio|Poisson ratio of methane hydrates|
+|bondCohesion|Cohesion of methane hydrates|
+|bondTanAngle|Angle of MohrCoulomb criterion. Set as 4.0|
+|beta1|a param for BrittleBeamIG. Set as 1.0|
+|beta2|a param for BrittleBeamIG. Set as 1.0|
+|k0|a cohesion coefficient for MHbond. Set as 1.0|
+|k1|a Young's modules coefficient for MHbond. Set as 1.0|
+|normalK_wall[N/m]|Normal kn of wall. Set as 10.0e9|
+|normalK_sand[N/m]|Normal kn of particles. Set as 3.5e9|
+|kn/ks|a ratio of kn to ks of particles. Set as 10.0|
+|dynamicMu|Dynamic frictional coefficient. Set as 0.001|
+|staticMu|Static frictional coefficient. Set as 0.4|
+|viscosity_damp_nr|Viscousity. Set as 0.00|
 
 
-2021.03.09
-- move the function to calculate the volume of particles into esysparticle.
-- move the function for the radius expansion into esysparticle.
-- stop the packing and output the snapshot when the degree of overlapping is below the threshold.
-
-2021.03.08
-- add the threshold for the overlapping.
-    - The function to calculate the distance between particles are implemented in the esysparticle.(getMinMaxDistance())
-
-2020.09.29
-- First commit.
-____
+### plot
+plot.py is for plotting some figures.
+Just exexute the following command.
+```
+python plot.py
+```
+Then, some figures are output in "/fig" directory. 
+This program uses matplotlib. 
